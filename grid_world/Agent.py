@@ -1,3 +1,12 @@
+# |---------------------------------------
+# |                                      |
+# |     This is a Agent creator class    |
+# |                                      |
+# |   This class is used with the Board  |
+# |     to create a working learning     |
+# |                                      |
+# ----------------------------------------
+
 import sys
 sys.path.append("./grid_world")
 import numpy as np

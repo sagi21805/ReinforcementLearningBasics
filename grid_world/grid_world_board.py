@@ -1,11 +1,16 @@
+# |---------------------------------------
+# |                                      |
+# |     This is a Board creator class    |
+# |                                      |
+# |   This class is used with the Agent  |
+# |     to create a working learning     |
+# |                                      |
+# ----------------------------------------
+
+
 import numpy as np
-# global variables
-BOARD_ROWS = 3
-BOARD_COLS = 4
-WIN_STATE = (0, 3)
-LOSE_STATE = (1, 3)
-START = (2, 0)
-WALLS = [(1, 1)]
+
+
 
 class Board:
     
