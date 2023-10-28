@@ -1,4 +1,6 @@
+import numpy as np
 
-t = [(0, 0), (1, 1), (2, 2), (3, 3)]
+x = np.array([[1, 2],
+              [3, 4]])
 
-print((1, 0) not in t)
+print(x[(0, 1)])
