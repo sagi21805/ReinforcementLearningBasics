@@ -22,13 +22,22 @@ class Agent:
         self.board = board
         self.position = board.start_position
         self.determenistic = True 
-        self.initialize_state_values()
+        self.gamma_decay = 0.4
+        self.initialize_Q_values()
 
     def initialize_state_values(self):
         self.state_values = {}
         for i in range(self.board.rows):
             for j in range(self.board.cols):
                 self.state_values[(i,j)] = 0
+    
+    def initialize_Q_values(self):
+        self.Q_values = {}
+        for i in range(self.board.rows):
+            for j in range(self.board.cols):
+                self.Q_values[(i, j)] = {}
+                for a in self.actions:
+                    self.Q_values[(i, j)][a] = 0 
                 
     def give_reward(self):
         match self.position:
@@ -57,6 +66,12 @@ class Agent:
         2 |
         return next position
         """
+        if not self.determenistic:
+            same_action_prob = 0.75
+            other_action_prob = (1 - same_action_prob) / (len(self.actions) - 1)
+            probs = [same_action_prob if a == action else other_action_prob for a in self.actions]
+            action = np.random.choice(self.actions, p = probs)
+            
         match action:
             case 0:
                 next_position = (self.position[0] - 1, self.position[1])
@@ -78,6 +93,9 @@ class Agent:
     
     def value_action(self, action):
         return self.state_values[self.next_position(action)]
+    
+    def value_Q_action(self, action):
+        return self.Q_values[self.position][action]
         
     def choose_action(self):
         # choose action with most expected value
@@ -86,8 +104,16 @@ class Agent:
         if np.random.uniform(0, 1) < self.exp_rate:
             action = max(self.actions, key = self.value_action)
         
-        if self.determenistic:
-            return action
+        return action
+    
+    def choose_Q_action(self):
+        # choose action with most expected value
+        action = np.random.choice(self.actions)
+
+        if np.random.uniform(0, 1) < self.exp_rate:
+            action = max(self.actions, key = self.value_Q_action)
+        
+        return action
       
                 
             
@@ -95,6 +121,10 @@ class Agent:
     def take_action(self, action):
         self.position = self.next_position(action)
         self.trajectory.append(self.next_position(action))
+        
+    def take_Q_action(self, action):
+        self.position = self.next_position(action)
+        self.trajectory.append((self.next_position(action), action))
 
 
     def reset(self):    
@@ -102,7 +132,17 @@ class Agent:
         self.position = self.board.start_position
         self.state_values[(self.board.win_state)] = 1
         self.state_values[(self.board.lose_state)] = -1
-        
+        for a in self.actions:
+            self.Q_values[self.board.win_state][a] = 1
+            self.state_values[(self.board.lose_state)] = -1
+    
+    def reset_Q(self):
+        self.trajectory = []
+        self.position = self.board.start_position
+        for a in self.actions:
+            self.Q_values[self.board.win_state][a] = 1
+            self.Q_values[self.board.lose_state][a] = -1
+    
     def play(self, rounds=10):
         i = 0
         while i < rounds:
@@ -115,12 +155,41 @@ class Agent:
             if reward != 0:
 
                 # explicitly assign end state to reward values
+                self.state_values[(self.position)] = reward
                 for s in reversed(self.trajectory):
                     self.state_values[s] = round(self.state_values[s] + self.lr * (reward - self.state_values[s]), 3)
                 self.reset()
                 i+= 1
+                
+    def play_Q(self, rounds=10):
+        i = 0
+        while i < rounds:
+            action = self.choose_Q_action()
+            # append trace
+            self.take_Q_action(action)
+            # by taking the action, it reaches the next state
+            
+            reward = self.give_reward()
+            if reward != 0:
+
+                # explicitly assign end state to reward values
+                for s in reversed(self.trajectory):
+                    self.Q_values[s[0]][s[1]] = round((1 - self.lr) * (self.Q_values[s[0]][s[1]]) + self.lr * (reward + self.gamma_decay * self.Q_values[s[0]][max(self.actions, key = self.value_Q_action)]), 2)
+                    # self.Q_values[s[0]][s[1]] = round(self.Q_values[s[0]][s[1]] + self.lr * (self.gamma_decay * reward - self.Q_values[s[0]][s[1]]), 2)
+
+                self.reset_Q()
+                i+= 1
 
 
+    def showQValues(self):
+        for i in range(0, self.board.rows):
+            print('------------------------------' * 5)
+            out = '| '
+            for j in range(0, self.board.cols):
+                out += str(self.Q_values[(i, j)]).ljust(34) + ' | '
+            print(out)
+        print('-----------------------------' * 5)
+        
     def showValues(self):
         for i in range(0, self.board.rows):
             print('----------------------------------')
@@ -130,9 +199,10 @@ class Agent:
             print(out)
         print('----------------------------------')
 
+#TODO create test function that I cant see the bot plays on the board
 
 board = Board(3, 4)
 agent = Agent(board)
 
-agent.play(500)
-agent.showValues()
+agent.play_Q(5000)
+agent.showQValues()
