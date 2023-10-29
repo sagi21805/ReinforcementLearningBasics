@@ -70,7 +70,7 @@ class Agent:
                 print("action is illegal")
         
         # check if the move is legal
-        if self.check_valid_position:
+        if self.check_valid_position(next_position):
             return next_position
         
         #else don't move
@@ -79,7 +79,6 @@ class Agent:
     def value_action(self, action):
         return self.state_values[self.next_position(action)]
         
-    
     def choose_action(self):
         # choose action with most expected value
         action = np.random.choice(self.actions)
@@ -135,5 +134,5 @@ class Agent:
 board = Board(3, 4)
 agent = Agent(board)
 
-agent.play(5000)
+agent.play(500)
 agent.showValues()
