@@ -21,7 +21,7 @@ class Agent:
         self.exp_rate = 0.3
         self.board = board
         self.position = board.start_position
-        self.determine = True #TODO learn what happens when changes.
+        self.determenistic = True 
         self.initialize_state_values()
 
     def initialize_state_values(self):
@@ -29,9 +29,6 @@ class Agent:
         for i in range(self.board.rows):
             for j in range(self.board.cols):
                 self.state_values[(i,j)] = 0
-        
-    
-
                 
     def give_reward(self):
         match self.position:
@@ -42,6 +39,15 @@ class Agent:
             case _:
                 return 0
 
+    def inside_grid(self, position: tuple[int, int]):
+        if (position[0] >= 0) and (position[0] < (self.board.rows)) and (position[1] >= 0) and (position[1] <= (self.board.cols -1)):
+            return True
+        return False
+
+    def check_valid_position(self, position: tuple[int, int]):
+        if self.inside_grid(position) and position not in self.board.walls:
+            return position
+                
     def next_position(self, action):
         """
         action: up-0, down-1, left-2, right-3
@@ -51,43 +57,41 @@ class Agent:
         2 |
         return next position
         """
-        if self.determine:
-            match action:
-                case 0:
-                    next_position = (self.position[0] - 1, self.position[1])
-                case 1:
-                    next_position = (self.position[0] + 1, self.position[1])
-                case 2:
-                    next_position = (self.position[0], self.position[1] - 1)
-                case 3:
-                    next_position = (self.position[0], self.position[1] + 1)
-                case _:
-                    print("action is illegal")
-            
-            # check if the move is legal
-            if (next_position[0] >= 0) and (next_position[0] <= (self.board.rows -1)):
-                if (next_position[1] >= 0) and (next_position[1] <= (self.board.cols -1)):
-                    if next_position not in self.board.walls:
-                        return next_position
-            
-            #else don't move
-            return self.position
+        match action:
+            case 0:
+                next_position = (self.position[0] - 1, self.position[1])
+            case 1:
+                next_position = (self.position[0] + 1, self.position[1])
+            case 2:
+                next_position = (self.position[0], self.position[1] - 1)
+            case 3:
+                next_position = (self.position[0], self.position[1] + 1)
+            case _:
+                print("action is illegal")
+        
+        # check if the move is legal
+        if self.check_valid_position:
+            return next_position
+        
+        #else don't move
+        return self.position
+    
+    def value_action(self, action):
+        return self.state_values[self.next_position(action)]
+        
     
     def choose_action(self):
         # choose action with most expected value
-        max_reward = 0
         action = np.random.choice(self.actions)
 
         if np.random.uniform(0, 1) < self.exp_rate:
-            # greedy action
-            for a in self.actions:
-                # if the action is deterministic
-                action_reward = self.state_values[self.next_position(a)]
-                if action_reward > max_reward:
-                    action = a
-                    max_reward = action
+            action = max(self.actions, key = self.value_action)
         
-        return action
+        if self.determenistic:
+            return action
+      
+                
+            
 
     def take_action(self, action):
         self.position = self.next_position(action)
